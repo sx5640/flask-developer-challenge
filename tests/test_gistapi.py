@@ -15,7 +15,7 @@ def client(request):
 
     #with gistapi.app.app_context():
     #    gistapi.init_db()
-    
+
     #def teardown():
     #    os.close(db_fd)
     #    os.unlink(flaskr.app.config['DATABASE'])
@@ -33,13 +33,57 @@ def test_ping(client):
 def test_search(client):
     """Start with a passing test."""
     post_data = {'username': 'justdionysus', 'pattern': 'TerbiumLabsChallenge_[0-9]+'}
-    rv = client.post('/api/v1/search', 
+    rv = client.post('/api/v1/search',
                      data=json.dumps(post_data),
                      headers={'content-type':'application/json'})
     result_dict = json.loads(rv.data.decode('utf-8'))
-    expected_dict = {'status': 'success', 
+    expected_dict = {'status': 'success',
                      'username': 'justdionysus',
                      'pattern': 'TerbiumLabsChallenge_[0-9]+',
                      'matches': ['https://gist.github.com/justdionysus/6b2972aa971dd605f524']}
     assert result_dict == expected_dict
 
+def test_validation_username(client):
+    """Start with a passing test."""
+    post_data = {'pattern': 'TerbiumLabsChallenge_[0-9]+'}
+    rv = client.post('/api/v1/search',
+                     data=json.dumps(post_data),
+                     headers={'content-type':'application/json'})
+    result_dict = json.loads(rv.data.decode('utf-8'))
+    expected_dict = {'status': 'failure',
+                     'errormessage': 'missing username or pattern to match'}
+    assert result_dict == expected_dict
+
+def test_validation_upattern(client):
+    """Start with a passing test."""
+    post_data = {'username': 'justdionysus'}
+    rv = client.post('/api/v1/search',
+                     data=json.dumps(post_data),
+                     headers={'content-type':'application/json'})
+    result_dict = json.loads(rv.data.decode('utf-8'))
+    expected_dict = {'status': 'failure',
+                     'errormessage': 'missing username or pattern to match'}
+    assert result_dict == expected_dict
+
+def test_validation_both(client):
+    """Start with a passing test."""
+    post_data = {}
+    rv = client.post('/api/v1/search',
+                     data=json.dumps(post_data),
+                     headers={'content-type':'application/json'})
+    result_dict = json.loads(rv.data.decode('utf-8'))
+    expected_dict = {'status': 'failure',
+                     'errormessage': 'missing username or pattern to match'}
+    assert result_dict == expected_dict
+
+# 
+# def test_invalid_username(client):
+#     """Start with a passing test."""
+#     post_data = {'username': '', 'pattern': 'TerbiumLabsChallenge_[0-9]+'}
+#     rv = client.post('/api/v1/search',
+#                      data=json.dumps(post_data),
+#                      headers={'content-type':'application/json'})
+#     result_dict = json.loads(rv.data.decode('utf-8'))
+#     expected_dict = {'status': 'failure',
+#                      'errormessage': 'missing username or pattern to match'}
+#     assert result_dict == expected_dict

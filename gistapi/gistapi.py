@@ -43,7 +43,12 @@ def gists_for_user(username, page_number = 1):
             username=username, page_number=page_number)
     response = requests.get(gists_url)
     # BONUS: What failures could happen?
+
+
     # BONUS: Paging? How does this work for users with tons of gists?
+    # the function is modified to include paging. the user now have the option to also input a page number.
+    # if the page number is not found in the input, the function will return page 1 by default
+    # each page will contains 1-10 gists
 
     return response.json()
 
@@ -63,13 +68,15 @@ def search():
     post_data = request.get_json()
 
     result = {}
-    result['matches'] = []
+
 
     # BONUS: Validate the arguments?
-    if (not post_data['username']) & (not post_data['pattern']):
+    # if there is no username or pattern given, return status failure
+    if ('username' not in post_data.keys()) | ('pattern' not in post_data.keys()):
         result['status'] = 'failure'
         result['errormessage'] = 'missing username or pattern to match'
         return jsonify(result)
+
 
     username = post_data['username']
     pattern = post_data['pattern']
@@ -77,9 +84,12 @@ def search():
     gists = gists_for_user(username)
     # BONUS: Handle invalid users?
 
+    # first assume we found nothing
+    result['matches'] = []
+
+    # REQUIRED: Fetch each gist and check for the pattern
     for gist in gists:
-        # REQUIRED: Fetch each gist and check for the pattern
-        # search every file contained in the gist and
+        # search every file contained in the gist and look for the pattern
         files = gist['files']
         for file_name in files.keys():
 
