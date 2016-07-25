@@ -11,6 +11,8 @@ providing a search across all public Gists for a given Github account.
 
 import requests
 from flask import Flask, jsonify, request
+import pdb
+import re
 
 
 # *The* app object
@@ -23,7 +25,7 @@ def ping():
     return "pong"
 
 
-def gists_for_user(username):
+def gists_for_user(username, page_number = 1):
     """Provides the list of gist metadata for a given user.
 
     This abstracts the /users/:username/gist endpoint from the Github API.
@@ -37,8 +39,8 @@ def gists_for_user(username):
         The dict parsed from the json response from the Github API.  See
         the above URL for details of the expected structure.
     """
-    gists_url = 'https://api.github.com/users/{username}/gists'.format(
-            username=username)
+    gists_url = 'https://api.github.com/users/{username}/gists?page={page_number}&per_page=10'.format(
+            username=username, page_number=page_number)
     response = requests.get(gists_url)
     # BONUS: What failures could happen?
     # BONUS: Paging? How does this work for users with tons of gists?
@@ -59,25 +61,48 @@ def search():
         indicating any failure conditions.
     """
     post_data = request.get_json()
+
+    result = {}
+    result['matches'] = []
+
     # BONUS: Validate the arguments?
+    if (not post_data['username']) & (not post_data['pattern']):
+        result['status'] = 'failure'
+        result['errormessage'] = 'missing username or pattern to match'
+        return jsonify(result)
 
     username = post_data['username']
     pattern = post_data['pattern']
 
-    result = {}
     gists = gists_for_user(username)
     # BONUS: Handle invalid users?
 
     for gist in gists:
         # REQUIRED: Fetch each gist and check for the pattern
+        # search every file contained in the gist and
+        files = gist['files']
+        for file_name in files.keys():
+
+            # send a get request to the url of the gist text,
+            text_url = files[file_name]['raw_url']
+            response = requests.get(text_url).text
+            # pattern matching
+            m = re.search(pattern, response)
+            # if there is a match, return the matched string
+            if m:
+                result['matches'] += ['https://gist.github.com/{username}/{id}'.format(
+                username = username, id = gist['id']
+                )]
+
+
         # BONUS: What about huge gists?
         # BONUS: Can we cache results in a datastore/db?
-        pass
+
 
     result['status'] = 'success'
     result['username'] = username
     result['pattern'] = pattern
-    result['matches'] = []
+
 
     return jsonify(result)
 
