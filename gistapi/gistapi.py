@@ -14,7 +14,6 @@ from flask import Flask, jsonify, request
 import re
 from werkzeug.contrib.cache import SimpleCache
 cache = SimpleCache()
-import pdb; pdb.set_trace()
 cache.clear()
 
 
@@ -143,6 +142,7 @@ def search_cache():
     if result:
         return jsonify(result)
     else:
+        result = {}
         result['status'] = 'failure'
         result['errormessage'] = 'search_cache: pattern not found'
         return jsonify(result)
