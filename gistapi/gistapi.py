@@ -83,6 +83,10 @@ def search():
 
     gists = gists_for_user(username)
     # BONUS: Handle invalid users?
+    if type(gists) == dict:
+        result['status'] = 'failure'
+        result['errormessage'] = gists['message']
+        return jsonify(result)
 
     # first assume we found nothing
     result['matches'] = []

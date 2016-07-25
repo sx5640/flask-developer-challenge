@@ -44,7 +44,7 @@ def test_search(client):
     assert result_dict == expected_dict
 
 def test_validation_username(client):
-    """Start with a passing test."""
+    """validation test on username."""
     post_data = {'pattern': 'TerbiumLabsChallenge_[0-9]+'}
     rv = client.post('/api/v1/search',
                      data=json.dumps(post_data),
@@ -54,8 +54,8 @@ def test_validation_username(client):
                      'errormessage': 'missing username or pattern to match'}
     assert result_dict == expected_dict
 
-def test_validation_upattern(client):
-    """Start with a passing test."""
+def test_validation_pattern(client):
+    """validation test on pattern."""
     post_data = {'username': 'justdionysus'}
     rv = client.post('/api/v1/search',
                      data=json.dumps(post_data),
@@ -66,7 +66,7 @@ def test_validation_upattern(client):
     assert result_dict == expected_dict
 
 def test_validation_both(client):
-    """Start with a passing test."""
+    """validation test on username and pattern."""
     post_data = {}
     rv = client.post('/api/v1/search',
                      data=json.dumps(post_data),
@@ -76,14 +76,13 @@ def test_validation_both(client):
                      'errormessage': 'missing username or pattern to match'}
     assert result_dict == expected_dict
 
-# 
-# def test_invalid_username(client):
-#     """Start with a passing test."""
-#     post_data = {'username': '', 'pattern': 'TerbiumLabsChallenge_[0-9]+'}
-#     rv = client.post('/api/v1/search',
-#                      data=json.dumps(post_data),
-#                      headers={'content-type':'application/json'})
-#     result_dict = json.loads(rv.data.decode('utf-8'))
-#     expected_dict = {'status': 'failure',
-#                      'errormessage': 'missing username or pattern to match'}
-#     assert result_dict == expected_dict
+def test_invalid_username(client):
+    """invalid username test."""
+    post_data = {'username': '', 'pattern': 'TerbiumLabsChallenge_[0-9]+'}
+    rv = client.post('/api/v1/search',
+                     data=json.dumps(post_data),
+                     headers={'content-type':'application/json'})
+    result_dict = json.loads(rv.data.decode('utf-8'))
+    expected_dict = {'status': 'failure',
+                     'errormessage': 'Not Found'}
+    assert result_dict == expected_dict
