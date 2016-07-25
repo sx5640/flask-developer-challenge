@@ -43,6 +43,19 @@ def test_search(client):
                      'matches': ['https://gist.github.com/justdionysus/6b2972aa971dd605f524']}
     assert result_dict == expected_dict
 
+def test_search(client):
+    """Start with a passing test."""
+    post_data = {'username': 'justdionysus', 'pattern': 'abcdefg'}
+    rv = client.post('/api/v1/search',
+                     data=json.dumps(post_data),
+                     headers={'content-type':'application/json'})
+    result_dict = json.loads(rv.data.decode('utf-8'))
+    expected_dict = {'status': 'success',
+                     'username': 'justdionysus',
+                     'pattern': 'abcdefg',
+                     'matches': []}
+    assert result_dict == expected_dict
+
 def test_validation_username(client):
     """validation test on username."""
     post_data = {'pattern': 'TerbiumLabsChallenge_[0-9]+'}
@@ -85,4 +98,21 @@ def test_invalid_username(client):
     result_dict = json.loads(rv.data.decode('utf-8'))
     expected_dict = {'status': 'failure',
                      'errormessage': 'Not Found'}
+    assert result_dict == expected_dict
+
+
+def test_cache(client):
+    """cache test."""
+    post_data = {'username': 'justdionysus', 'pattern': 'TerbiumLabsChallenge_[0-9]+'}
+    rv = client.post('/api/v1/search',
+                     data=json.dumps(post_data),
+                     headers={'content-type':'application/json'})
+    cache_post = client.post('/cache',
+                     data=json.dumps({'pattern': 'TerbiumLabsChallenge_[0-9]+'}),
+                     headers={'content-type':'application/json'})
+    result_dict = json.loads(cache_post.data.decode('utf-8'))
+    expected_dict = {'status': 'success',
+                     'username': 'justdionysus',
+                     'pattern': 'TerbiumLabsChallenge_[0-9]+',
+                     'matches': ['https://gist.github.com/justdionysus/6b2972aa971dd605f524']}
     assert result_dict == expected_dict

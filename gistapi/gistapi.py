@@ -11,8 +11,12 @@ providing a search across all public Gists for a given Github account.
 
 import requests
 from flask import Flask, jsonify, request
-import pdb
 import re
+from werkzeug.contrib.cache import SimpleCache
+cache = SimpleCache()
+import pdb; pdb.set_trace()
+cache.clear()
+
 
 
 # *The* app object
@@ -88,6 +92,10 @@ def search():
         result['errormessage'] = gists['message']
         return jsonify(result)
 
+    # at this point, we are getting some gist from the API, so status should be set to success.
+    result['status'] = 'success'
+    result['username'] = username
+    result['pattern'] = pattern
     # first assume we found nothing
     result['matches'] = []
 
@@ -109,16 +117,35 @@ def search():
                 )]
 
 
-        # BONUS: What about huge gists?
-        # BONUS: Can we cache results in a datastore/db?
+                # BONUS: What about huge gists?
 
-
-    result['status'] = 'success'
-    result['username'] = username
-    result['pattern'] = pattern
+                # BONUS: Can we cache results in a datastore/db?
+                rv = cache.get(pattern)
+                if rv is None:
+                    rv = result
+                    cache.set(pattern, rv, timeout=5 * 60)
 
 
     return jsonify(result)
+
+# adding a route only for testing the caching functionality
+@app.route("/cache", methods=['POST'])
+def search_cache():
+    post_data = request.get_json()
+    if 'pattern' not in post_data.keys():
+        result['status'] = 'failure'
+        result['errormessage'] = 'search_cache: pattern not inputted'
+        return jsonify(result)
+
+    pattern = post_data['pattern']
+    result = cache.get(pattern)
+
+    if result:
+        return jsonify(result)
+    else:
+        result['status'] = 'failure'
+        result['errormessage'] = 'search_cache: pattern not found'
+        return jsonify(result)
 
 
 if __name__ == '__main__':
