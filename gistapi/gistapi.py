@@ -12,9 +12,9 @@ providing a search across all public Gists for a given Github account.
 import requests
 from flask import Flask, jsonify, request
 import re
-from werkzeug.contrib.cache import SimpleCache
-cache = SimpleCache()
-cache.clear()
+import redis
+cache = redis.StrictRedis(host='localhost', port=6379, db=0)
+cache.flushall()
 
 
 
@@ -91,61 +91,51 @@ def search():
         result['errormessage'] = gists['message']
         return jsonify(result)
 
-    # at this point, we are getting some gist from the API, so status should be set to success.
-    result['status'] = 'success'
-    result['username'] = username
-    result['pattern'] = pattern
-    # first assume we found nothing
-    result['matches'] = []
+    # search cache
+    # the cache key is in the format of pattern:{pattern}, user:{username}, so each pattern and user combination is unique
+    cached_result = cache.get("pattern:{pattern}, user:{username}".format(
+    pattern=pattern, username=username
+    ))
+    if cached_result:
+        import pdb; pdb.set_trace()
+        result = cached_result
+        result['cache'] = True
+    else:
+        # at this point, we are getting some gist from the API, so status should be set to success.
+        result['status'] = 'success'
+        result['username'] = username
+        result['pattern'] = pattern
+        # first assume we found nothing
+        result['matches'] = []
 
-    # REQUIRED: Fetch each gist and check for the pattern
-    for gist in gists:
-        # search every file contained in the gist and look for the pattern
-        files = gist['files']
-        for file_name in files.keys():
+        # REQUIRED: Fetch each gist and check for the pattern
+        for gist in gists:
+            # search every file contained in the gist and look for the pattern
+            files = gist['files']
+            for file_name in files.keys():
 
-            # send a get request to the url of the gist text,
-            text_url = files[file_name]['raw_url']
-            response = requests.get(text_url).text
-            # pattern matching
-            m = re.search(pattern, response)
-            # if there is a match, return the matched string
-            if m:
-                result['matches'] += ['https://gist.github.com/{username}/{id}'.format(
-                username = username, id = gist['id']
-                )]
+                # send a get request to the url of the gist text,
+                text_url = files[file_name]['raw_url']
+                response = requests.get(text_url).text
+                # pattern matching
+                m = re.search(pattern, response)
+                # if there is a match, return the matched string
+                if m:
+                    result['matches'] += ['https://gist.github.com/{username}/{id}'.format(
+                    username = username, id = gist['id']
+                    )]
 
+                    # BONUS: What about huge gists?
 
-                # BONUS: What about huge gists?
+                    # BONUS: Can we cache results in a datastore/db?
+                    cache.set("pattern:{pattern}, user:{username}".format(
+                    pattern=pattern, username=username
+                    ), result)
 
-                # BONUS: Can we cache results in a datastore/db?
-                rv = cache.get(pattern)
-                if rv is None:
-                    rv = result
-                    cache.set(pattern, rv, timeout=5 * 60)
+                    import pdb; pdb.set_trace()
 
 
     return jsonify(result)
-
-# adding a route only for testing the caching functionality
-@app.route("/cache", methods=['POST'])
-def search_cache():
-    post_data = request.get_json()
-    if 'pattern' not in post_data.keys():
-        result['status'] = 'failure'
-        result['errormessage'] = 'search_cache: pattern not inputted'
-        return jsonify(result)
-
-    pattern = post_data['pattern']
-    result = cache.get(pattern)
-
-    if result:
-        return jsonify(result)
-    else:
-        result = {}
-        result['status'] = 'failure'
-        result['errormessage'] = 'search_cache: pattern not found'
-        return jsonify(result)
 
 
 if __name__ == '__main__':

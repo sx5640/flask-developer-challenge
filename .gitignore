@@ -10,3 +10,4 @@
 /dist
 /gistapi.egg-info
 /test/__pycache__
+/.cache
