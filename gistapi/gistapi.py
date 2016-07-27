@@ -13,6 +13,8 @@ import requests
 from flask import Flask, jsonify, request
 import re
 import redis
+
+# initializing Redis, clear the cache database when launch
 cache = redis.StrictRedis(host='localhost', port=6379, db=0)
 cache.flushall()
 
@@ -80,7 +82,6 @@ def search():
         result['errormessage'] = 'missing username or pattern to match'
         return jsonify(result)
 
-
     username = post_data['username']
     pattern = post_data['pattern']
 
@@ -97,9 +98,9 @@ def search():
     pattern=pattern, username=username
     ))
 
+    # if the search result can be found in cache, use the cache, otherwise, do a new search
     if cached_result:
         result = eval(cached_result)
-        result['cache'] = True
     else:
         # at this point, we are getting some gist from the API, so status should be set to success.
         result['status'] = 'success'
@@ -136,6 +137,28 @@ def search():
 
     return jsonify(result)
 
+# a route only for testing the caching functionality
+@app.route("/cache", methods=['POST'])
+def search_cache():
+    post_data = request.get_json()
+    if ('username' not in post_data.keys()) | ('pattern' not in post_data.keys()):
+        result['status'] = 'failure'
+        result['errormessage'] = 'search_cache: pattern or username not inputted'
+        return jsonify(result)
+
+    username = post_data['username']
+    pattern = post_data['pattern']
+
+    result = cache.get("pattern:{pattern}, user:{username}".format(
+    pattern=pattern, username=username
+    ))
+
+    if result:
+        return jsonify(eval(result))
+    else:
+        result['status'] = 'failure'
+        result['errormessage'] = 'search_cache: pattern not found'
+        return jsonify(result)
 
 if __name__ == '__main__':
     app.run(debug=True, host='0.0.0.0', port=8000)
