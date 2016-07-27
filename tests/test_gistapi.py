@@ -43,8 +43,8 @@ def test_search(client):
                      'matches': ['https://gist.github.com/justdionysus/6b2972aa971dd605f524']}
     assert result_dict == expected_dict
 
-def test_search(client):
-    """Start with a passing test."""
+def test_search_no_match(client):
+    """test for no matching result."""
     post_data = {'username': 'justdionysus', 'pattern': 'abcdefg'}
     rv = client.post('/api/v1/search',
                      data=json.dumps(post_data),

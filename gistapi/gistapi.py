@@ -96,9 +96,9 @@ def search():
     cached_result = cache.get("pattern:{pattern}, user:{username}".format(
     pattern=pattern, username=username
     ))
+
     if cached_result:
-        import pdb; pdb.set_trace()
-        result = cached_result
+        result = eval(cached_result)
         result['cache'] = True
     else:
         # at this point, we are getting some gist from the API, so status should be set to success.
@@ -119,7 +119,7 @@ def search():
                 response = requests.get(text_url).text
                 # pattern matching
                 m = re.search(pattern, response)
-                # if there is a match, return the matched string
+                # if there is a match, return the url of the gist
                 if m:
                     result['matches'] += ['https://gist.github.com/{username}/{id}'.format(
                     username = username, id = gist['id']
@@ -132,7 +132,6 @@ def search():
                     pattern=pattern, username=username
                     ), result)
 
-                    import pdb; pdb.set_trace()
 
 
     return jsonify(result)
